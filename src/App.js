@@ -31,6 +31,38 @@ class App extends Component {
     }
   }
 
+  // Get geo location through browser if available
+  getLocByGeo = (e) => {
+    e.preventDefault()
+    let geo = navigator.geolocation;
+      geo.getCurrentPosition((pos) => {
+        const apikey = process.env.REACT_APP_OPENWEATHERMAP_API_KEY
+        const lat = parseFloat(pos.coords.latitude)
+        const long = parseFloat(pos.coords.longitude)
+        console.log(lat)
+        console.log(long)
+        console.log(apikey)
+        // `api.openweathermap.org/data/2.5/weather?lat=37.7765888&lon=-122.43599359999999&appid=85c03d1f56e15c40107203872a13b232
+        // `api.openweathermap.org/data/2.5/weather?lat=37.7765888&lon=-122.43,us&appid=85c03d1f56e15c40107203872a13b232
+
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${long}&appid=${apikey}`
+        
+        fetch(url).then((res) => {
+          console.log(res)
+          
+          return res.json()
+        }).then((json) => {
+          console.log(json)
+          this.setState({ weatherData: json})
+        }).catch((err) => {
+          this.setState({ weatherData: null }) // Clear the weather data we don't have any to display
+          // Print an error to the console. 
+          console.log('-- Error fetching --')
+          console.log(err.message)
+        })
+      })  
+  }
+
   handleSubmit(e) {
     e.preventDefault()
     // ! Get your own API key ! 
@@ -40,10 +72,13 @@ class App extends Component {
     // Form an API request URL with the apikey and zip
     const url = `https://api.openweathermap.org/data/2.5/weather?zip=${zip},us&appid=${apikey}`
     // Get data from the API with fetch
+
     fetch(url).then(res => {
       // Handle the response stream as JSON
+      console.log(res)
       return res.json()
     }).then((json) => {
+      console.log(json)
       // If the request was successful assign the data to component state
       this.setState({ weatherData: json })
       // ! This needs better error checking here or at renderWeather() 
@@ -62,37 +97,14 @@ class App extends Component {
   renderWeather() {
     // This method returns undefined or a JSX component
     if (this.state.weatherData === null ) {
-      return <div> Enter A zip</div>
+      return <div> Enter A zip</div>;
     }
     else if (this.state.weatherData.cod !== 200) {
       return <div>Something Bad Happened....</div>
     }
-    console.log(this.state.weatherData.weather[0])
+    // console.log(this.state.weatherData.weather[0])
     return < Weather weatherData={this.state.weatherData.weather[0]} otherData={this.state.weatherData.main } />
-  }
-
-  //   /* 
-  //   This next step needs another level of error checking. It's 
-  //   possible to get a JSON response for an invalid zip in which 
-  //   case the step below fails. 
-  //   */ 
-  //   console.log(this.state.weatherData)
-  //   // Take the weather data apart to more easily populate the component
-  //   const { main, description, icon } = this.state.weatherData.weather[0]
-  //   const { temp, pressure, humidity, temp_min, temp_max } = this.state.weatherData.main 
-    
-  //   return (
-  //     <div>
-  //       <div>Title: {main}</div>
-  //       <div>Desc: {description}</div>
-  //       <div>Icon: {icon}</div>
-  //       <div>Temp: {temp}</div>
-  //       <div>Pressure: {pressure}</div>
-  //       <div>Humidity: {humidity}</div>
-  //       <div>Temp Min: {temp_min} Max:{temp_max}</div>
-  //     </div>
-  //   )
-  // }
+  };
 
   render() {
     return (
@@ -107,15 +119,19 @@ class App extends Component {
           Set the value held in component state when a change occurs at the input 
           */}
           <input 
-            value={this.state.inputValue} 
+            value={this.state.inputValue}
             onChange={e => this.setState({ inputValue: e.target.value })}
             type="text" 
             pattern="(\d{5}([\-]\d{4})?)"
             placeholder="enter zip"
           />
 
-          <button type="submit">Submit</button>
+          <button type="submit">Get Weather By Zip</button>
+        </form>
 
+
+        <form onSubmit={e => this.getLocByGeo(e)}>
+          <button type='submit'>Get Weather By GeoLocation</button>
         </form>
 
         {/** Conditionally render this component */}
